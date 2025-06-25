@@ -36,6 +36,158 @@ command_exists() {
     command -v "$1" >/dev/null 2>&1
 }
 
+# Show installation status
+show_status() {
+    local tool="$1"
+    local command="$2"
+
+    if command_exists "$command"; then
+        echo -e "  ${GREEN}✓${NC} $tool"
+        return 0
+    else
+        echo -e "  ${RED}✗${NC} $tool"
+        return 1
+    fi
+}
+
+# Install package based on OS
+install_package() {
+    local package="$1"
+    local os="$2"
+
+    echo -e "${BLUE}Installing $package...${NC}"
+
+    case "$os" in
+        "debian")
+            sudo apt-get update && sudo apt-get install -y $package
+            ;;
+        "redhat")
+            if command_exists dnf; then
+                sudo dnf install -y $package
+            elif command_exists yum; then
+                sudo yum install -y $package
+            else
+                echo -e "${RED}Neither dnf nor yum found${NC}"
+                return 1
+            fi
+            ;;
+        "arch")
+            sudo pacman -S --noconfirm $package
+            ;;
+        "macos")
+            if command_exists brew; then
+                brew install $package
+            else
+                echo -e "${RED}Homebrew not found. Please install Homebrew first.${NC}"
+                echo "Visit: https://brew.sh"
+                return 1
+            fi
+            ;;
+        *)
+            echo -e "${YELLOW}Please install $package manually for your system${NC}"
+            return 1
+            ;;
+    esac
+}
+
+# Install Python packages
+install_python_package() {
+    local package="$1"
+
+    echo -e "${BLUE}Installing Python package: $package${NC}"
+
+    if command_exists pip3; then
+        pip3 install --user "$package"
+    elif command_exists pip; then
+        pip install --user "$package"
+    else
+        echo -e "${RED}pip not found. Please install Python and pip first.${NC}"
+        return 1
+    fi
+}
+
+# Install core converters
+install_core_converters() {
+    local os=$(detect_os)
+    echo -e "${BLUE}Installing core conversion tools...${NC}"
+    echo ""
+
+    # Image processing
+    echo -e "${YELLOW}Image Processing Tools:${NC}"
+
+    if ! command_exists convert; then
+        echo "Installing ImageMagick..."
+        case "$os" in
+            "debian") install_package "imagemagick" "$os" ;;
+            "redhat") install_package "ImageMagick" "$os" ;;
+            "arch") install_package "imagemagick" "$os" ;;
+            "macos") install_package "imagemagick" "$os" ;;
+        esac
+    fi
+
+    if ! command_exists gm; then
+        echo "Installing GraphicsMagick..."
+        case "$os" in
+            "debian") install_package "graphicsmagick" "$os" ;;
+            "redhat") install_package "GraphicsMagick" "$os" ;;
+            "arch") install_package "graphicsmagick" "$os" ;;
+            "macos") install_package "graphicsmagick" "$os" ;;
+        esac
+    fi
+
+    # Document processing
+    echo -e "${YELLOW}Document Processing Tools:${NC}"
+
+    if ! command_exists pandoc; then
+        echo "Installing Pandoc..."
+        case "$os" in
+            "debian") install_package "pandoc" "$os" ;;
+            "redhat") install_package "pandoc" "$os" ;;
+            "arch") install_package "pandoc" "$os" ;;
+            "macos") install_package "pandoc" "$os" ;;
+        esac
+    fi
+
+    if ! command_exists libreoffice; then
+        echo "Installing LibreOffice..."
+        case "$os" in
+            "debian") install_package "libreoffice" "$os" ;;
+            "redhat") install_package "libreoffice" "$os" ;;
+            "arch") install_package "libreoffice-fresh" "$os" ;;
+            "macos") install_package "libreoffice" "$os" ;;
+        esac
+    fi
+
+    # Multimedia processing
+    echo -e "${YELLOW}Multimedia Processing Tools:${NC}"
+
+    if ! command_exists ffmpeg; then
+        echo "Installing FFmpeg..."
+        case "$os" in
+            "debian") install_package "ffmpeg" "$os" ;;
+            "redhat")
+                # Enable EPEL for RHEL/CentOS
+                if ! command_exists ffmpeg; then
+                    echo "Note: FFmpeg may require EPEL repository on RHEL/CentOS"
+                    echo "Try: sudo dnf install epel-release && sudo dnf install ffmpeg"
+                fi
+                install_package "ffmpeg" "$os" ;;
+            "arch") install_package "ffmpeg" "$os" ;;
+            "macos") install_package "ffmpeg" "$os" ;;
+        esac
+    fi
+
+    if ! command_exists sox; then
+        echo "Installing SoX..."
+        case "$os" in
+            "debian") install_package "sox" "$os" ;;
+            "redhat") install_package "sox" "$os" ;;
+            "arch") install_package "sox" "$os" ;;
+            "macos") install_package "sox" "$os" ;;
+        esac
+    fi
+}
+
 # Install specialized converters
 install_specialized_converters() {
     local os=$(detect_os)
@@ -116,6 +268,7 @@ install_python_converters() {
 
     # Install OpenCV for advanced image processing
     echo "Installing OpenCV..."
+    install_python_package "numpy"  # Required for OpenCV
     install_python_package "opencv-python"
 
     # Install additional document processors
@@ -155,6 +308,28 @@ install_utilities() {
             "macos") echo "Archive utilities already available on macOS" ;;
         esac
     fi
+
+    # JSON processor
+    if ! command_exists jq; then
+        echo "Installing jq..."
+        case "$os" in
+            "debian") install_package "jq" "$os" ;;
+            "redhat") install_package "jq" "$os" ;;
+            "arch") install_package "jq" "$os" ;;
+            "macos") install_package "jq" "$os" ;;
+        esac
+    fi
+
+    # Basic calculator for scripts
+    if ! command_exists bc; then
+        echo "Installing bc calculator..."
+        case "$os" in
+            "debian") install_package "bc" "$os" ;;
+            "redhat") install_package "bc" "$os" ;;
+            "arch") install_package "bc" "$os" ;;
+            "macos") echo "bc already available on macOS" ;;
+        esac
+    fi
 }
 
 # Check installation status
@@ -188,7 +363,16 @@ check_installation_status() {
     if command_exists python3; then
         python3 -c "import PIL" 2>/dev/null && echo -e "  ${GREEN}✓${NC} Pillow (PIL)" || echo -e "  ${RED}✗${NC} Pillow (PIL)"
         python3 -c "import cv2" 2>/dev/null && echo -e "  ${GREEN}✓${NC} OpenCV" || echo -e "  ${RED}✗${NC} OpenCV"
+        python3 -c "import docx" 2>/dev/null && echo -e "  ${GREEN}✓${NC} python-docx" || echo -e "  ${RED}✗${NC} python-docx"
+        python3 -c "import openpyxl" 2>/dev/null && echo -e "  ${GREEN}✓${NC} openpyxl" || echo -e "  ${RED}✗${NC} openpyxl"
     fi
+    echo ""
+
+    echo -e "${PURPLE}Utilities:${NC}"
+    show_status "file" "file"
+    show_status "jq" "jq"
+    show_status "bc" "bc"
+    show_status "unzip" "unzip"
     echo ""
 }
 
@@ -232,6 +416,9 @@ create_directories() {
     mkdir -p config
     mkdir -p examples
     mkdir -p temp
+    mkdir -p output
+    mkdir -p logs
+    mkdir -p cache
 
     echo -e "${GREEN}✓${NC} Directory structure created"
 }
@@ -274,6 +461,7 @@ main_menu() {
         1)
             create_directories
             install_core_converters
+            install_utilities
             check_installation_status
             ;;
         2)
@@ -314,145 +502,9 @@ main_menu() {
     esac
 }
 
-# Run main menu or specific function
+# Handle command line arguments
 if [ $# -eq 0 ]; then
     main_menu
 else
     main_menu "$1"
 fi
-
-# Package installation function based on OS
-install_package() {
-    local package="$1"
-    local os="$2"
-
-    case "$os" in
-        "debian")
-            sudo apt-get update && sudo apt-get install -y "$package"
-            ;;
-        "redhat")
-            sudo yum install -y "$package" || sudo dnf install -y "$package"
-            ;;
-        "arch")
-            sudo pacman -S --noconfirm "$package"
-            ;;
-        "macos")
-            if command_exists brew; then
-                brew install "$package"
-            else
-                echo -e "${RED}Homebrew not found. Please install Homebrew first.${NC}"
-                return 1
-            fi
-            ;;
-        *)
-            echo -e "${YELLOW}Please install $package manually for your system${NC}"
-            return 1
-            ;;
-    esac
-}
-
-# Install Python packages
-install_python_package() {
-    local package="$1"
-
-    if command_exists pip3; then
-        pip3 install --user "$package"
-    elif command_exists pip; then
-        pip install --user "$package"
-    else
-        echo -e "${RED}pip not found. Please install Python and pip first.${NC}"
-        return 1
-    fi
-}
-
-# Show installation status
-show_status() {
-    local tool="$1"
-    local command="$2"
-
-    if command_exists "$command"; then
-        echo -e "  ${GREEN}✓${NC} $tool"
-        return 0
-    else
-        echo -e "  ${RED}✗${NC} $tool"
-        return 1
-    fi
-}
-
-# Install core converters
-install_core_converters() {
-    local os=$(detect_os)
-    echo -e "${BLUE}Installing core conversion tools...${NC}"
-    echo ""
-
-    # Image processing
-    echo -e "${YELLOW}Image Processing Tools:${NC}"
-
-    if ! command_exists convert; then
-        echo "Installing ImageMagick..."
-        case "$os" in
-            "debian") install_package "imagemagick" "$os" ;;
-            "redhat") install_package "ImageMagick" "$os" ;;
-            "arch") install_package "imagemagick" "$os" ;;
-            "macos") install_package "imagemagick" "$os" ;;
-        esac
-    fi
-
-    if ! command_exists gm; then
-        echo "Installing GraphicsMagick..."
-        case "$os" in
-            "debian") install_package "graphicsmagick" "$os" ;;
-            "redhat") install_package "GraphicsMagick" "$os" ;;
-            "arch") install_package "graphicsmagick" "$os" ;;
-            "macos") install_package "graphicsmagick" "$os" ;;
-        esac
-    fi
-
-    # Document processing
-    echo -e "${YELLOW}Document Processing Tools:${NC}"
-
-    if ! command_exists pandoc; then
-        echo "Installing Pandoc..."
-        case "$os" in
-            "debian") install_package "pandoc" "$os" ;;
-            "redhat") install_package "pandoc" "$os" ;;
-            "arch") install_package "pandoc" "$os" ;;
-            "macos") install_package "pandoc" "$os" ;;
-        esac
-    fi
-
-    if ! command_exists libreoffice; then
-        echo "Installing LibreOffice..."
-        case "$os" in
-            "debian") install_package "libreoffice" "$os" ;;
-            "redhat") install_package "libreoffice" "$os" ;;
-            "arch") install_package "libreoffice-fresh" "$os" ;;
-            "macos") install_package "libreoffice" "$os" ;;
-        esac
-    fi
-
-    # Multimedia processing
-    echo -e "${YELLOW}Multimedia Processing Tools:${NC}"
-
-    if ! command_exists ffmpeg; then
-        echo "Installing FFmpeg..."
-        case "$os" in
-            "debian") install_package "ffmpeg" "$os" ;;
-            "redhat") install_package "ffmpeg" "$os" ;;
-            "arch") install_package "ffmpeg" "$os" ;;
-            "macos") install_package "ffmpeg" "$os" ;;
-        esac
-    fi
-
-    if ! command_exists sox; then
-        echo "Installing SoX..."
-        case "$os" in
-            "debian") install_package "sox" "$os" ;;
-            "redhat") install_package "sox" "$os" ;;
-            "arch") install_package "sox" "$os" ;;
-            "macos") install_package "sox" "$os" ;;
-        esac
-    fi
-}
-
-# Install
