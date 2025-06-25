@@ -1,5 +1,5 @@
 {
-  "name": "universal-file-converter",
+  "name": "convert",
   "version": "1.0.0",
   "description": "Universal file conversion system",
   "main": "web/api/server.js",

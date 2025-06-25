@@ -20,7 +20,7 @@ BLUE := \033[0;34m
 NC := \033[0m # No Color
 
 # Help system
-.PHONY: help list-libraries list-formats
+.PHONY: help list-libraries list-formats search benchmark validate
 help:
 	@echo -e "$(BLUE)Universal File Converter System$(NC)"
 	@echo "Usage: make [library] [from_format] [to_format] [input_file] [output_file]"
@@ -28,7 +28,12 @@ help:
 	@echo "Available commands:"
 	@echo "  help              - Show this help"
 	@echo "  list-libraries    - List all available libraries"
-	@echo "  list-formats      - List supported formats by library"
+	@echo "  list-formats      - List supported formats by library
+  search            - Search libraries for specific conversion (make search [from] [to])
+  benchmark         - Benchmark conversion speed and quality
+  validate          - Validate file format and integrity
+  batch             - Batch convert multiple files
+  preview           - Preview conversion without executing"
 	@echo "  check-conflicts   - Check format conversion conflicts"
 	@echo ""
 	@echo "Interactive conflict resolution:"
@@ -50,6 +55,94 @@ list-formats:
 check-conflicts:
 	@echo -e "$(YELLOW)Checking for format conversion conflicts...$(NC)"
 	@bash $(HELP_DIR)/conflict_checker.sh
+
+# Search for libraries supporting specific conversion
+search:
+	@if [ -z "$(word 1,$(filter-out $@,$(MAKECMDGOALS)))" ] || [ -z "$(word 2,$(filter-out $@,$(MAKECMDGOALS)))" ]; then \
+		echo -e "$(RED)Usage: make search [from_format] [to_format]$(NC)"; \
+		echo "Example: make search md pdf"; \
+		exit 1; \
+	fi; \
+	FROM_FMT="$(word 1,$(filter-out $@,$(MAKECMDGOALS)))"; \
+	TO_FMT="$(word 2,$(filter-out $@,$(MAKECMDGOALS)))"; \
+	echo -e "$(BLUE)Searching libraries for: $FROM_FMT → $TO_FMT$(NC)"; \
+	echo ""; \
+	FOUND=0; \
+	for converter in $(CONVERTER_DIR)/*.sh; do \
+		if [ -f "$converter" ]; then \
+			converter_name=$(basename "$converter" .sh); \
+			if bash "$converter" --check-support "$FROM_FMT" "$TO_FMT" 2>/dev/null; then \
+				FOUND=1; \
+				description=$(bash "$converter" --description 2>/dev/null || echo "No description"); \
+				quality=$(bash "$converter" --quality "$FROM_FMT" "$TO_FMT" 2>/dev/null || echo "?"); \
+				speed=$(bash "$converter" --speed "$FROM_FMT" "$TO_FMT" 2>/dev/null || echo "?"); \
+				echo -e "$(GREEN)✓ $converter_name$(NC)"; \
+				echo "  Description: $description"; \
+				echo "  Quality: $quality/5 | Speed: $speed/5"; \
+				echo "  Command: make $converter_name $FROM_FMT $TO_FMT [input] [output]"; \
+				echo ""; \
+			fi; \
+		fi; \
+	done; \
+	if [ $FOUND -eq 0 ]; then \
+		echo -e "$(RED)No libraries found for $FROM_FMT → $TO_FMT$(NC)"; \
+		echo ""; \
+		echo -e "$(YELLOW)Suggestions:$(NC)"; \
+		echo "• Check available formats: make list-formats"; \
+		echo "• Try conversion chains: ./help.sh $FROM_FMT $TO_FMT"; \
+		echo "• Install additional libraries: ./config/install_dependencies.sh"; \
+	fi
+
+# Benchmark conversion performance
+benchmark:
+	@if [ -z "$(word 1,$(filter-out $@,$(MAKECMDGOALS)))" ]; then \
+		echo -e "$(RED)Usage: make benchmark [test_file] [from_format] [to_format]$(NC)"; \
+		echo "Example: make benchmark test.jpg jpg png"; \
+		exit 1; \
+	fi; \
+	TEST_FILE="$(word 1,$(filter-out $@,$(MAKECMDGOALS)))"; \
+	FROM_FMT="$(word 2,$(filter-out $@,$(MAKECMDGOALS)))"; \
+	TO_FMT="$(word 3,$(filter-out $@,$(MAKECMDGOALS)))"; \
+	echo -e "$(BLUE)Benchmarking conversion: $FROM_FMT → $TO_FMT$(NC)"; \
+	bash $(HELP_DIR)/benchmark.sh "$TEST_FILE" "$FROM_FMT" "$TO_FMT"
+
+# Validate file format and integrity
+validate:
+	@if [ -z "$(word 1,$(filter-out $@,$(MAKECMDGOALS)))" ]; then \
+		echo -e "$(RED)Usage: make validate [file]$(NC)"; \
+		exit 1; \
+	fi; \
+	FILE="$(word 1,$(filter-out $@,$(MAKECMDGOALS)))"; \
+	echo -e "$(BLUE)Validating file: $FILE$(NC)"; \
+	bash $(HELP_DIR)/validator.sh "$FILE"
+
+# Batch convert multiple files
+batch:
+	@if [ -z "$(word 1,$(filter-out $@,$(MAKECMDGOALS)))" ]; then \
+		echo -e "$(RED)Usage: make batch [library] [from_format] [to_format] [pattern]$(NC)"; \
+		echo "Example: make batch imagemagick jpg png '*.jpg'"; \
+		exit 1; \
+	fi; \
+	LIBRARY="$(word 1,$(filter-out $@,$(MAKECMDGOALS)))"; \
+	FROM_FMT="$(word 2,$(filter-out $@,$(MAKECMDGOALS)))"; \
+	TO_FMT="$(word 3,$(filter-out $@,$(MAKECMDGOALS)))"; \
+	PATTERN="$(word 4,$(filter-out $@,$(MAKECMDGOALS)))"; \
+	echo -e "$(BLUE)Batch converting: $PATTERN ($FROM_FMT → $TO_FMT) using $LIBRARY$(NC)"; \
+	bash $(HELP_DIR)/batch_processor.sh "$LIBRARY" "$FROM_FMT" "$TO_FMT" "$PATTERN"
+
+# Preview conversion command without executing
+preview:
+	@if [ -z "$(word 1,$(filter-out $@,$(MAKECMDGOALS)))" ]; then \
+		echo -e "$(RED)Usage: make preview [library] [from_format] [to_format] [input] [output]$(NC)"; \
+		exit 1; \
+	fi; \
+	LIBRARY="$(word 1,$(filter-out $@,$(MAKECMDGOALS)))"; \
+	FROM_FMT="$(word 2,$(filter-out $@,$(MAKECMDGOALS)))"; \
+	TO_FMT="$(word 3,$(filter-out $@,$(MAKECMDGOALS)))"; \
+	INPUT="$(word 4,$(filter-out $@,$(MAKECMDGOALS)))"; \
+	OUTPUT="$(word 5,$(filter-out $@,$(MAKECMDGOALS)))"; \
+	echo -e "$(BLUE)Preview mode - Command that would be executed:$(NC)"; \
+	PREVIEW_MODE=1 bash $(CONVERTER_DIR)/$LIBRARY.sh "$FROM_FMT" "$TO_FMT" "$INPUT" "$OUTPUT"
 
 # Image conversion libraries
 imagemagick:

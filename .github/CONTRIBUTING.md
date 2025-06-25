@@ -15,7 +15,7 @@ Thank you for your interest in contributing!
 
 ```bash
 git clone your-fork-url
-cd universal-file-converter
+cd convert
 ./config/install_dependencies.sh
 ```
 

@@ -14,7 +14,7 @@ PURPLE='\033[0;35m'
 CYAN='\033[0;36m'
 NC='\033[0m'
 
-PROJECT_NAME="universal-file-converter"
+PROJECT_NAME="convert"
 BASE_DIR="${1:-$PROJECT_NAME}"
 
 # Function to create directory and log it
@@ -251,7 +251,7 @@ batch:
 
 # Package.json for optional Node.js dependencies
 create_file "package.json" "{
-  \"name\": \"universal-file-converter\",
+  \"name\": \"convert\",
   \"version\": \"1.0.0\",
   \"description\": \"Universal file conversion system\",
   \"main\": \"web/api/server.js\",
@@ -741,7 +741,7 @@ console.log('API Server - implementation needed');
 "
 
 create_file "web/frontend/package.json" "{
-  \"name\": \"universal-file-converter-frontend\",
+  \"name\": \"convert-frontend\",
   \"version\": \"1.0.0\",
   \"description\": \"Web frontend for Universal File Converter\",
   \"main\": \"src/index.js\",
@@ -805,7 +805,7 @@ services:
 create_file "deployment/kubernetes/deployment.yaml" "apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: universal-file-converter
+  name: convert
 
 # TODO: Add Kubernetes manifests
 "
@@ -953,7 +953,7 @@ Thank you for your interest in contributing!
 
 \`\`\`bash
 git clone your-fork-url
-cd universal-file-converter
+cd convert
 ./config/install_dependencies.sh
 \`\`\`
 
