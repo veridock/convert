@@ -9,7 +9,7 @@
     "install-deps": "./config/install_dependencies.sh"
   },
   "keywords": ["converter", "files", "multimedia", "documents"],
-  "license": "MIT",
+  "license": "Apache-2.0",
   "dependencies": {},
   "devDependencies": {}
 }
