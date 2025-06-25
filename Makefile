@@ -28,12 +28,12 @@ help:
 	@echo "Available commands:"
 	@echo "  help              - Show this help"
 	@echo "  list-libraries    - List all available libraries"
-	@echo "  list-formats      - List supported formats by library
-  search            - Search libraries for specific conversion (make search [from] [to])
-  benchmark         - Benchmark conversion speed and quality
-  validate          - Validate file format and integrity
-  batch             - Batch convert multiple files
-  preview           - Preview conversion without executing"
+	@echo "  list-formats      - List supported formats by library"
+	@echo "  search            - Search libraries for specific conversion (make search [from] [to])"
+	@echo "  benchmark         - Benchmark conversion speed and quality"
+	@echo "  validate          - Validate file format and integrity"
+	@echo "  batch             - Batch convert multiple files"
+	@echo "  preview           - Preview conversion without executing"
 	@echo "  check-conflicts   - Check format conversion conflicts"
 	@echo ""
 	@echo "Interactive conflict resolution:"
@@ -41,7 +41,16 @@ help:
 
 list-libraries:
 	@echo -e "$(GREEN)Available Conversion Libraries:$(NC)"
-	@ls $(CONVERTER_DIR)/*.sh | sed 's/.*\///' | sed 's/.sh//' | sort
+	@if [ -d "$(CONVERTER_DIR)" ]; then \
+		for lib in $(CONVERTER_DIR)/*.sh; do \
+			if [ -f "$$lib" ] && [ "$$(basename "$$lib")" != "_template.sh" ]; then \
+				echo "  $$(basename "$$lib" .sh)"; \
+			fi; \
+		done; \
+	else \
+		echo -e "$(YELLOW)  No converters found. Run: make install-deps$(NC)"; \
+	fi
+
 
 list-formats:
 	@echo -e "$(GREEN)Supported Formats by Library:$(NC)"
@@ -58,39 +67,37 @@ check-conflicts:
 
 # Search for libraries supporting specific conversion
 search:
+	@echo -e "$(BLUE)Searching for converters that support: $(word 1,$(filter-out $@,$(MAKECMDGOALS))) → $(word 2,$(filter-out $@,$(MAKECMDGOALS)))$(NC)"
+	@echo -e "$(YELLOW)Note: This is a basic search. Some converters might support this conversion even if not listed.$(NC)"
+	@echo ""
 	@if [ -z "$(word 1,$(filter-out $@,$(MAKECMDGOALS)))" ] || [ -z "$(word 2,$(filter-out $@,$(MAKECMDGOALS)))" ]; then \
-		echo -e "$(RED)Usage: make search [from_format] [to_format]$(NC)"; \
+		echo -e "$(RED)Error: Missing arguments$(NC)"; \
+		echo "Usage: make search [from_format] [to_format]"; \
 		echo "Example: make search md pdf"; \
 		exit 1; \
-	fi; \
-	FROM_FMT="$(word 1,$(filter-out $@,$(MAKECMDGOALS)))"; \
-	TO_FMT="$(word 2,$(filter-out $@,$(MAKECMDGOALS)))"; \
-	echo -e "$(BLUE)Searching libraries for: $FROM_FMT → $TO_FMT$(NC)"; \
-	echo ""; \
-	FOUND=0; \
+	fi
+	@FOUND=0; \
 	for converter in $(CONVERTER_DIR)/*.sh; do \
-		if [ -f "$converter" ]; then \
-			converter_name=$(basename "$converter" .sh); \
-			if bash "$converter" --check-support "$FROM_FMT" "$TO_FMT" 2>/dev/null; then \
+		if [ -f "$$converter" ]; then \
+			converter_name=$$(basename "$$converter" .sh); \
+			if bash "$$converter" --list-formats 2>/dev/null | grep -q -i "Input:.*$(word 1,$(filter-out $@,$(MAKECMDGOALS)))" && \
+			   bash "$$converter" --list-formats 2>/dev/null | grep -q -i "Output:.*$(word 2,$(filter-out $@,$(MAKECMDGOALS)))"; then \
 				FOUND=1; \
-				description=$(bash "$converter" --description 2>/dev/null || echo "No description"); \
-				quality=$(bash "$converter" --quality "$FROM_FMT" "$TO_FMT" 2>/dev/null || echo "?"); \
-				speed=$(bash "$converter" --speed "$FROM_FMT" "$TO_FMT" 2>/dev/null || echo "?"); \
-				echo -e "$(GREEN)✓ $converter_name$(NC)"; \
-				echo "  Description: $description"; \
-				echo "  Quality: $quality/5 | Speed: $speed/5"; \
-				echo "  Command: make $converter_name $FROM_FMT $TO_FMT [input] [output]"; \
+				echo -e "$(GREEN)✓ $$converter_name$(NC)"; \
+				echo "  Command: make $$converter_name $(word 1,$(filter-out $@,$(MAKECMDGOALS))) $(word 2,$(filter-out $@,$(MAKECMDGOALS))) [input] [output]"; \
 				echo ""; \
 			fi; \
 		fi; \
 	done; \
-	if [ $FOUND -eq 0 ]; then \
-		echo -e "$(RED)No libraries found for $FROM_FMT → $TO_FMT$(NC)"; \
+	if [ $$FOUND -eq 0 ]; then \
+		echo -e "$(YELLOW)No direct converters found for $(word 1,$(filter-out $@,$(MAKECMDGOALS))) → $(word 2,$(filter-out $@,$(MAKECMDGOALS)))$(NC)"; \
 		echo ""; \
-		echo -e "$(YELLOW)Suggestions:$(NC)"; \
-		echo "• Check available formats: make list-formats"; \
-		echo "• Try conversion chains: ./help.sh $FROM_FMT $TO_FMT"; \
-		echo "• Install additional libraries: ./config/install_dependencies.sh"; \
+		echo -e "$(BLUE)Available converters:$(NC)"; \
+		make list-libraries; \
+		echo ""; \
+		echo -e "$(YELLOW)Try:$(NC)"; \
+		echo "• Check formats: make list-formats"; \
+		echo "• Try conversion chains: ./help.sh $(word 1,$(filter-out $@,$(MAKECMDGOALS))) $(word 2,$(filter-out $@,$(MAKECMDGOALS)))"; \
 	fi
 
 # Benchmark conversion performance

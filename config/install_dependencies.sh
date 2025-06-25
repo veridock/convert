@@ -426,7 +426,7 @@ create_directories() {
 # Main installation menu
 main_menu() {
     echo -e "${BLUE}╔════════════════════════════════════════════════════╗${NC}"
-    echo -e "${BLUE}║        Universal File Converter Installation      ║${NC}"
+    echo -e "${BLUE}║        Universal File Converter Installation       ║${NC}"
     echo -e "${BLUE}╚════════════════════════════════════════════════════╝${NC}"
     echo ""
 
