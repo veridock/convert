@@ -4,6 +4,7 @@ env
 .venv
 venv/
 env/
+generated*.*
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
