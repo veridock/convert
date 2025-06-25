@@ -1,0 +1,14 @@
+name: Continuous Integration
+
+on: [push, pull_request]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v3
+    - name: Run tests
+      run: bash tests/run_tests.sh
+
+# TODO: Complete CI configuration
+

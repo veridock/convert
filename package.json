@@ -1,0 +1,16 @@
+{
+  "name": "universal-file-converter",
+  "version": "1.0.0",
+  "description": "Universal file conversion system",
+  "main": "web/api/server.js",
+  "scripts": {
+    "start": "node web/api/server.js",
+    "test": "bash tests/run_tests.sh",
+    "install-deps": "./config/install_dependencies.sh"
+  },
+  "keywords": ["converter", "files", "multimedia", "documents"],
+  "license": "MIT",
+  "dependencies": {},
+  "devDependencies": {}
+}
+

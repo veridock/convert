@@ -1,0 +1,11 @@
+version: '3.8'
+
+services:
+  converter:
+    build: .
+    volumes:
+      - ./input:/app/input
+      - ./output:/app/output
+
+# TODO: Complete Docker Compose configuration
+

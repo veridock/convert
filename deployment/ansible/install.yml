@@ -1,0 +1,8 @@
+---
+- name: Install Universal File Converter
+  hosts: all
+  tasks:
+    - name: TODO - Add Ansible tasks
+      debug:
+        msg: "Ansible playbook - implementation needed"
+

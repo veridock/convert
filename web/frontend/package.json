@@ -1,0 +1,11 @@
+{
+  "name": "universal-file-converter-frontend",
+  "version": "1.0.0",
+  "description": "Web frontend for Universal File Converter",
+  "main": "src/index.js",
+  "dependencies": {},
+  "scripts": {
+    "start": "echo 'Frontend - implementation needed'"
+  }
+}
+
